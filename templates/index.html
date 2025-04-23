@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Project Zomboid RCON Manager</title>
+</head>
+<body>
+    <h1>Zomboid Server Manager</h1>
+    {% with messages = get_flashed_messages() %}
+      {% if messages %}
+        <ul>
+          {% for message in messages %}
+            <li>{{ message }}</li>
+          {% endfor %}
+        </ul>
+      {% endif %}
+    {% endwith %}
+    
+    <h2>Commands</h2>
+    <ul>
+    {% for cmd, info in commands.items() %}
+        <li>
+            <form method="post" action="{{ url_for('run_command') }}">
+                <strong>{{ cmd }}</strong>: {{ info.description }}
+                <input type="hidden" name="command" value="{{ cmd }}">
+                {% for param in info.params %}
+                    <input type="text" name="{{ param }}" placeholder="{{ param }}">
+                {% endfor %}
+                <button type="submit">Execute</button>
+            </form>
+        </li>
+    {% endfor %}
+    </ul>
+</body>
+</html>
