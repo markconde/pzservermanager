@@ -1,6 +1,6 @@
-# Project Zomboid RCON Manager
+# PZ Server Manager
 
-The **Project Zomboid RCON Manager** is a lightweight Flask-based web application designed to manage a Project Zomboid dedicated server. It connects to the server via the RCON protocol and provides a browser-based control panel for administrators to:
+The **PZ Server Manager** is a lightweight Flask-based web application designed to manage a Project Zomboid dedicated server. It connects to the server via the RCON protocol and provides a browser-based control panel for administrators to:
 
 - **Issue quick server commands** (e.g., save world, restart, stop) with a single click.
 - **Broadcast chat messages** to all players.
