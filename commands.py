@@ -1,18 +1,217 @@
 commands = {
     "additem": {
-        "description": "Give an item to a player.",
-        "usage": 'additem "username" "module.item" [count]',
-        "params": ["username", "item", "count"]
+        "description": "Give an item to a player. If no username is given then you will receive the item yourself. Count is optional.",
+        "usage": '/additem "username" "module.item" [count]',
+        "params": ["username", "item", "count"],
     },
     "adduser": {
         "description": "Add a new user to a whitelisted server.",
-        "usage": 'adduser "username" "password"',
-        "params": ["username", "password"]
+        "usage": '/adduser "username" "password"',
+        "params": ["username", "password"],
     },
-    # ... add additional commands following the help output details ...
+    "addvehicle": {
+        "description": "Spawn a vehicle.",
+        "usage": '/addvehicle "script" "user or x,y,z"',
+        "params": ["script", "destination"],
+    },
+    "addxp": {
+        "description": "Give XP to a player.",
+        "usage": '/addxp "playername" perkname=xp',
+        "params": ["playername", "perkXP"],
+    },
+    "alarm": {
+        "description": "Sound a building alarm at the Admin's position (must be in a room).",
+        "usage": '/alarm',
+        "params": [],
+    },
+    "banid": {
+        "description": "Ban a SteamID.",
+        "usage": '/banid SteamID',
+        "params": ["steamid"],
+    },
+    "banuser": {
+        "description": "Ban a user with optional IP ban and reason.",
+        "usage": '/banuser "username" [-ip] [-r "reason"]',
+        "params": ["username", "ip", "reason"],
+    },
+    "changeoption": {
+        "description": "Change a server option.",
+        "usage": '/changeoption optionName "newValue"',
+        "params": ["optionName", "newValue"],
+    },
+    "checkModsNeedUpdate": {
+        "description": "Indicates whether a mod has been updated (writes answer to log file).",
+        "usage": '/checkModsNeedUpdate',
+        "params": [],
+    },
+    "chopper": {
+        "description": "Place a helicopter event on a random player.",
+        "usage": '/chopper',
+        "params": [],
+    },
+    "createhorde": {
+        "description": "Spawn a horde near a player. With no username, the horde will be created around you.",
+        "usage": '/createhorde count ["username"]',
+        "params": ["count", "username"],
+    },
+    "createhorde2": {
+        "description": "UI_ServerOptionDesc_CreateHorde2",
+        "usage": '/createhorde2',
+        "params": [],
+    },
+    "godmod": {
+        "description": "Make a player invincible. If no username is set, you become invincible.",
+        "usage": '/godmod ["username"] -value',
+        "params": ["username", "value"],
+    },
+    "gunshot": {
+        "description": "Place a gunshot sound on a random player.",
+        "usage": '/gunshot',
+        "params": [],
+    },
     "help": {
-        "description": "List all available commands.",
-        "usage": "help",
-        "params": []
-    }
+        "description": "List all server commands.",
+        "usage": '/help',
+        "params": [],
+    },
+    "invisible": {
+        "description": "Make a player invisible to zombies. If no username is set, you become invisible.",
+        "usage": '/invisible ["username"] -value',
+        "params": ["username", "value"],
+    },
+    "kick": {
+        "description": "Kick a user with an optional reason.",
+        "usage": '/kickuser "username" -r "reason"',
+        "params": ["username", "reason"],
+    },
+    "lightning": {
+        "description": "Execute the lightning command. Username is optional except from the server console.",
+        "usage": '/lightning ["username"]',
+        "params": ["username"],
+    },
+    "log": {
+        "description": "Set log level.",
+        "usage": '/log param1 param2',
+        "params": ["param1", "param2"],
+    },
+    "noclip": {
+        "description": "Toggle noclip mode for a player.",
+        "usage": '/noclip "username" -value',
+        "params": ["username", "value"],
+    },
+    "players": {
+        "description": "List all connected players.",
+        "usage": '/players',
+        "params": [],
+    },
+    "quit": {
+        "description": "Save and quit the server.",
+        "usage": '/quit',
+        "params": [],
+    },
+    "releasesafehouse": {
+        "description": "Release a safehouse you own.",
+        "usage": '/releasesafehouse',
+        "params": [],
+    },
+    "reloadlua": {
+        "description": "Reload a Lua script on the server.",
+        "usage": '/reloadlua "filename"',
+        "params": ["filename"],
+    },
+    "reloadoptions": {
+        "description": "Reload server options (ServerOptions.ini) and send to clients.",
+        "usage": '/reloadoptions',
+        "params": [],
+    },
+    "removeuserfromwhitelist": {
+        "description": "Remove a user from the whitelist.",
+        "usage": '/removeuserfromwhitelist "username"',
+        "params": ["username"],
+    },
+    "removezombies": {
+        "description": "UI_ServerOptionDesc_RemoveZombies",
+        "usage": '/removezombies',
+        "params": [],
+    },
+    "replay": {
+        "description": "Record and play replay for a moving player.",
+        "usage": '/replay "playername" -record|-play|-stop filename',
+        "params": ["playername", "mode", "filename"],
+    },
+    "save": {
+        "description": "Save the current world.",
+        "usage": '/save',
+        "params": [],
+    },
+    "servermsg": {
+        "description": "Broadcast a message to all connected players.",
+        "usage": '/servermsg "My Message"',
+        "params": ["message"],
+    },
+    "setaccesslevel": {
+        "description": "Set access level of a player. Levels: Admin, Moderator, Overseer, GM, Observer.",
+        "usage": '/setaccesslevel "username" "accesslevel"',
+        "params": ["username", "accesslevel"],
+    },
+    "showoptions": {
+        "description": "Show the list of current server options and values.",
+        "usage": '/showoptions',
+        "params": [],
+    },
+    "startrain": {
+        "description": "Starts raining on the server.",
+        "usage": '/startrain ["intensity"]',
+        "params": ["intensity"],
+    },
+    "startstorm": {
+        "description": "Starts a storm on the server.",
+        "usage": '/startstorm ["duration"]',
+        "params": ["duration"],
+    },
+    "stats": {
+        "description": "Set and clear server statistics.",
+        "usage": '/stats mode period',
+        "params": ["mode", "period"],
+    },
+    "stoprain": {
+        "description": "Stop raining on the server.",
+        "usage": '/stoprain',
+        "params": [],
+    },
+    "stopweather": {
+        "description": "Stop weather on the server.",
+        "usage": '/stopweather',
+        "params": [],
+    },
+    "teleport": {
+        "description": "Teleport to a player. Once teleported, wait for the map to appear.",
+        "usage": '/teleport "playername" ["player2"]',
+        "params": ["playername", "player2"],
+    },
+    "teleportto": {
+        "description": "Teleport to coordinates.",
+        "usage": '/teleportto x,y,z',
+        "params": ["coordinates"],
+    },
+    "thunder": {
+        "description": "Execute thunder command; username is optional except from the server console.",
+        "usage": '/thunder ["username"]',
+        "params": ["username"],
+    },
+    "unbanid": {
+        "description": "Unban a SteamID.",
+        "usage": '/unbanid SteamID',
+        "params": ["steamid"],
+    },
+    "unbanuser": {
+        "description": "Unban a player.",
+        "usage": '/unbanuser "username"',
+        "params": ["username"],
+    },
+    "voiceban": {
+        "description": "Block voice from a user.",
+        "usage": '/voiceban "username" -value',
+        "params": ["username", "value"],
+    },
 }

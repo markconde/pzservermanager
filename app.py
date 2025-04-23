@@ -20,16 +20,18 @@ def create_app():
             flash(f"Unknown command: {cmd_key}")
             return redirect(url_for('index'))
     
-        # Build command string with any available parameters
+        # Build command string using parameters
         params = []
         for param in cmd_info['params']:
             value = request.form.get(param)
             if value:
                 params.append(f'"{value}"')
-        full_cmd = f"{cmd_key} " + " ".join(params) if params else f"/{cmd_key}"
+        full_cmd = f"{cmd_key} " + " ".join(params) if params else f"{cmd_key}"
         
         try:
-            with Client(app.config['RCON_HOST'], app.config['RCON_PORT'], passwd=app.config['RCON_PASSWORD']) as client:
+            with Client(app.config['RCON_HOST'],
+                        app.config['RCON_PORT'],
+                        passwd=app.config['RCON_PASSWORD']) as client:
                 resp = client.run(full_cmd)
                 flash(f"Command '{full_cmd}' executed. Response: {resp}")
         except Exception as e:

@@ -1,14 +1,16 @@
-version: '3.8'
+version: "3.8"
+
 services:
   zomboid-rcon:
     build: .
     ports:
-      - "5000:5000"
+      - "${APP_PORT}"  # Uses the port mapping from .env
     environment:
+      - SECRET_KEY=${SECRET_KEY}
       - RCON_HOST=${RCON_HOST}
       - RCON_PORT=${RCON_PORT}
       - RCON_PASSWORD=${RCON_PASSWORD}
-      - SECRET_KEY=${SECRET_KEY}
-    # Optionally mount code for live edit
-    # volumes:
-    #   - ./:/app
+      - GAME_SERVER_CONFIG_FOLDER_PATH=${GAME_SERVER_CONFIG_FOLDER_PATH}
+      - GAME_SERVER_OPTIONS_FILENAME=${GAME_SERVER_OPTIONS_FILENAME}
+    volumes:
+      - ${GAME_SERVER_CONFIG_FOLDER_PATH}:/config
