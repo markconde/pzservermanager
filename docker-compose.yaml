@@ -2,7 +2,7 @@ version: "3.8"
 
 services:
   zomboid-rcon:
-    build: .
+    image: markconde/pzservermanager:latest
     ports:
       - "${APP_PORT}"  # Uses the port mapping from .env
     environment:
