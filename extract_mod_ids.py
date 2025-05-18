@@ -7,6 +7,7 @@ def extract_mod_ids_from_metadata(description_or_metadata):
     Returns a list of mod IDs (strings).
     Handles common patterns like:
     - Mod ID: SomeMod
+    - ModID: SomeMod
     - ModIDs=SomeMod;AnotherMod
     - Mods=SomeMod;AnotherMod
     - Mods=ModA,ModB,ModC
@@ -14,9 +15,9 @@ def extract_mod_ids_from_metadata(description_or_metadata):
     - etc.
     """
     mod_ids = set()
-    # Pattern 1: Mod ID: SomeMod
+    # Pattern 1: Mod ID: SomeMod, ModID: SomeMod, ModID=SomeMod, Mod ID=SomeMod
     for match in re.findall(
-        r"Mod ID[:=]\s*([\w\-]+)",
+        r"Mod ?ID[:=]\s*([\w\-]+)",
         description_or_metadata,
         re.IGNORECASE,
     ):
@@ -32,7 +33,7 @@ def extract_mod_ids_from_metadata(description_or_metadata):
                 mod_ids.add(mod)
     # Pattern 2.1: Mods=ModA,ModB,ModC
     for match in re.findall(
-        r"Mods?=([\w;,\-, ]+)",
+        r"Mods?=([\w;,,\-, ]+)",
         description_or_metadata,
         re.IGNORECASE,
     ):

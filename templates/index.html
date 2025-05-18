@@ -147,6 +147,13 @@
             <strong>Workshop IDs:</strong> <span id="publishedFileIdsList"></span>
         </p>
         <button type="button" id="exportFromManageModsBtn">Export Mod IDs / Workshop IDs Strings</button>
+        <button type="button" id="clearCacheBtn"
+            style="margin-left:1em; background:#fdd; color:#900; border:1px solid #900;">Clear Workshop Cache</button>
+        <span id="clearCacheStatus" style="margin-left:1em; color:#090; display:none;"></span>
+        <button type="button" id="syncModIdsBtn"
+            style="margin-left:1em; background:#eef; color:#003; border:1px solid #99f;">Sync Mod IDs from
+            Steam</button>
+        <span id="syncModIdsStatus" style="margin-left:1em; color:#090; display:none;"></span>
         <div id="manageExportResult" style="display:none; margin-top:1em;">
             <div><strong>Mod IDs=</strong></div>
             <textarea id="manage_modids_export" readonly style="width:100%; min-height:40px;"></textarea>
@@ -154,6 +161,20 @@
             <div><strong>Workshop IDs=</strong></div>
             <textarea id="manage_publishedfileids_export" readonly style="width:100%; min-height:40px;"></textarea>
             <button type="button" onclick="copyToClipboard('manage_publishedfileids_export')">Copy Workshop IDs</button>
+        </div>
+        <div id="manageWorkshopModMapContainer" style="margin-top:1em; display:none;">
+            <div class="result-label">Workshop ID → Mod IDs Map</div>
+            <table id="manageWorkshopModMapTable" border="1" style="width:100%;">
+                <thead>
+                    <tr>
+                        <th>Workshop ID</th>
+                        <th>Mod IDs (from Steam)</th>
+                        <th>Mod ID (in Table)</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
         </div>
     </div>
 
@@ -175,6 +196,18 @@
         <button type="button" onclick="copyToClipboard('publishedfileids_export')">Copy Workshop IDs</button>
         <button type="button" id="generateExportBtn">Generate Mod IDs / Workshop IDs Strings</button>
         <button type="button" id="loadToManageModsBtn">Load into Manage Mods Set</button>
+        <div id="workshopModMapContainer" style="margin-top:1em; display:none;">
+            <div class="result-label">Workshop ID → Mod IDs Map</div>
+            <table id="workshopModMapTable" border="1" style="width:100%;">
+                <thead>
+                    <tr>
+                        <th>Workshop ID</th>
+                        <th>Mod IDs</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
         <div id="exportResult" style="display:none; margin-top:1em;">
             <div><strong>Mod IDs=</strong></div>
             <textarea id="modids_export" readonly style="width:100%; min-height:40px;"></textarea>
@@ -183,6 +216,13 @@
             <textarea id="publishedfileids_export2" readonly style="width:100%; min-height:40px;"></textarea>
             <button type="button" onclick="copyToClipboard('publishedfileids_export2')">Copy Workshop IDs</button>
         </div>
+    </div>
+
+    <div id="loadingOverlay"
+        style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(255,255,255,0.7); z-index:9999; align-items:center; justify-content:center;">
+        <div
+            style="font-size:1.5em; color:#333; background:#fff; border:1px solid #ccc; border-radius:8px; padding:2em; box-shadow:0 2px 8px rgba(0,0,0,0.15);">
+            Loading, please wait...</div>
     </div>
 
     <script>
@@ -197,6 +237,10 @@
                 tab.classList.remove('active');
             });
             event.target.classList.add('active');
+        }
+
+        function showLoading(show) {
+            document.getElementById('loadingOverlay').style.display = show ? 'flex' : 'none';
         }
 
         function renderModsTable() {
@@ -237,6 +281,7 @@
 
         document.getElementById('parseModsForm').addEventListener('submit', async function (e) {
             e.preventDefault();
+            showLoading(true);
             const mod_ids = document.getElementById('mod_ids').value;
             const workshop_ids = document.getElementById('publishedfileids').value;
             const response = await fetch('/parse-mods', {
@@ -245,6 +290,7 @@
                 body: JSON.stringify({ mod_ids, workshop_ids }) // Use 'workshop_ids' to match backend
             });
             const result = await response.json();
+            showLoading(false);
             document.getElementById('parseResult').textContent = JSON.stringify(result, null, 2);
             modsSet = result;
             renderModsTable();
@@ -259,6 +305,7 @@
 
         document.getElementById('collectionForm').addEventListener('submit', async function (e) {
             e.preventDefault();
+            showLoading(true);
             document.getElementById('collectionError').style.display = 'none';
             const url = document.getElementById('collection_url').value;
             const resp = await fetch('/api/collection', {
@@ -267,8 +314,23 @@
                 body: JSON.stringify({ collection_url: url })
             });
             const data = await resp.json();
+            showLoading(false);
             if (resp.ok && data.workshop_ids) {
                 document.getElementById('publishedfileids_export').value = data.workshop_ids.join(';');
+                // Show the workshop_mod_map table
+                if (data.workshop_mod_map) {
+                    const mapTable = document.getElementById('workshopModMapTable').querySelector('tbody');
+                    mapTable.innerHTML = '';
+                    for (const wid of data.workshop_ids) {
+                        const modIds = (data.workshop_mod_map[wid] || []).join('; ');
+                        const tr = document.createElement('tr');
+                        tr.innerHTML = `<td><a href="https://steamcommunity.com/sharedfiles/filedetails/?id=${wid}" target="_blank">${wid}</a></td><td>${modIds}</td>`;
+                        mapTable.appendChild(tr);
+                    }
+                    document.getElementById('workshopModMapContainer').style.display = 'block';
+                } else {
+                    document.getElementById('workshopModMapContainer').style.display = 'none';
+                }
                 // Automatically generate export and load into Manage Mods Set
                 const exportResp = await fetch(`/api/export?workshop_ids=${encodeURIComponent(data.workshop_ids.join(';'))}`);
                 const exportData = await exportResp.json();
@@ -289,6 +351,7 @@
                 document.getElementById('collectionError').textContent = data.error || 'Unknown error';
                 document.getElementById('collectionError').style.display = 'block';
                 document.getElementById('publishedfileids_export').value = '';
+                document.getElementById('workshopModMapContainer').style.display = 'none';
                 document.getElementById('exportResult').style.display = 'none';
             }
         });
@@ -296,8 +359,10 @@
         document.getElementById('generateExportBtn').addEventListener('click', async function () {
             const ids = document.getElementById('publishedfileids_export').value;
             if (!ids) return;
+            showLoading(true);
             const resp = await fetch(`/api/export?workshop_ids=${encodeURIComponent(ids)}`);
             const data = await resp.json();
+            showLoading(false);
             document.getElementById('modids_export').value = data.Mods;
             document.getElementById('publishedfileids_export2').value = data.WorkshopItems;
             document.getElementById('exportResult').style.display = 'block';
@@ -320,21 +385,133 @@
             showTab('manageMods');
         });
 
+        function renderManageWorkshopModMap(workshopIds, modsSet) {
+            if (!workshopIds || !workshopIds.length) {
+                document.getElementById('manageWorkshopModMapContainer').style.display = 'none';
+                return;
+            }
+            showLoading(true);
+            fetch(`/api/collection`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ collection_url: workshopIds.join(';') })
+            })
+                .then(resp => resp.json())
+                .then(data => {
+                    showLoading(false);
+                    if (data.workshop_mod_map) {
+                        const mapTable = document.getElementById('manageWorkshopModMapTable').querySelector('tbody');
+                        mapTable.innerHTML = '';
+                        for (const wid of data.workshop_ids) {
+                            const steamModIds = (data.workshop_mod_map[wid] || []);
+                            // Find the mod_id in the table for this workshop id
+                            const tableMod = modsSet.find(x => x.publishedfileid === wid);
+                            const tableModId = tableMod ? tableMod.mod_id : '';
+                            // Check for match
+                            let status = '';
+                            if (steamModIds.length === 0 && !tableModId) {
+                                status = '<span style="color:gray">No Mod ID</span>';
+                            } else if (steamModIds.includes(tableModId)) {
+                                status = '<span style="color:green">Match</span>';
+                            } else if (tableModId && steamModIds.length > 0) {
+                                status = '<span style="color:orange">Mismatch</span>';
+                            } else if (!tableModId && steamModIds.length > 0) {
+                                status = '<span style="color:blue">Missing in Table</span>';
+                            } else if (tableModId && steamModIds.length === 0) {
+                                status = '<span style="color:red">Missing in Steam</span>';
+                            }
+                            const tr = document.createElement('tr');
+                            tr.innerHTML = `<td><a href="https://steamcommunity.com/sharedfiles/filedetails/?id=${wid}" target="_blank">${wid}</a></td><td>${steamModIds.join('; ')}</td><td>${tableModId}</td><td>${status}</td>`;
+                            mapTable.appendChild(tr);
+                        }
+                        document.getElementById('manageWorkshopModMapContainer').style.display = 'block';
+                    } else {
+                        document.getElementById('manageWorkshopModMapContainer').style.display = 'none';
+                    }
+                })
+                .catch(() => {
+                    showLoading(false);
+                    document.getElementById('manageWorkshopModMapContainer').style.display = 'none';
+                });
+        }
+
         document.getElementById('exportFromManageModsBtn').addEventListener('click', async function () {
             if (!modsSet.length) return;
             const modIds = modsSet.map(x => x.mod_id).filter(Boolean).join(';');
-            const workshopIds = modsSet.map(x => x.publishedfileid).filter(Boolean).join(';');
-            // Use the same export API to get canonical Mod IDs if possible
-            let exportData = { Mods: modIds, WorkshopItems: workshopIds };
-            if (workshopIds) {
-                const resp = await fetch(`/api/export?workshop_ids=${encodeURIComponent(workshopIds)}`);
+            const workshopIds = modsSet.map(x => x.publishedfileid).filter(Boolean);
+            let exportData = { Mods: modIds, WorkshopItems: workshopIds.join(';') };
+            if (workshopIds.length) {
+                showLoading(true);
+                const resp = await fetch(`/api/export?workshop_ids=${encodeURIComponent(workshopIds.join(';'))}`);
                 if (resp.ok) {
                     exportData = await resp.json();
                 }
+                showLoading(false);
             }
             document.getElementById('manage_modids_export').value = exportData.Mods;
             document.getElementById('manage_publishedfileids_export').value = exportData.WorkshopItems;
             document.getElementById('manageExportResult').style.display = 'block';
+            // Show the mod map for the current set, with matching logic
+            renderManageWorkshopModMap(workshopIds, modsSet);
+        });
+
+        document.getElementById('clearCacheBtn').addEventListener('click', async function () {
+            showLoading(true);
+            document.getElementById('clearCacheStatus').style.display = 'none';
+            const resp = await fetch('/api/clear-cache', { method: 'POST' });
+            showLoading(false);
+            if (resp.ok) {
+                document.getElementById('clearCacheStatus').textContent = 'Cache cleared!';
+                document.getElementById('clearCacheStatus').style.display = 'inline';
+            } else {
+                document.getElementById('clearCacheStatus').textContent = 'Failed to clear cache.';
+                document.getElementById('clearCacheStatus').style.display = 'inline';
+            }
+            setTimeout(() => {
+                document.getElementById('clearCacheStatus').style.display = 'none';
+            }, 3000);
+        });
+
+        async function fetchCanonicalModIdsForSet(workshopIds) {
+            const resp = await fetch(`/api/collection`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ collection_url: workshopIds.join(';') })
+            });
+            if (!resp.ok) return null;
+            return await resp.json();
+        }
+
+        document.getElementById('syncModIdsBtn').addEventListener('click', async function () {
+            const workshopIds = modsSet.map(x => x.publishedfileid).filter(Boolean);
+            if (!workshopIds.length) return;
+            showLoading(true);
+            document.getElementById('syncModIdsStatus').style.display = 'none';
+            const data = await fetchCanonicalModIdsForSet(workshopIds);
+            showLoading(false);
+            if (data && data.workshop_mod_map) {
+                // For each entry in modsSet, update mod_id to the first canonical mod id from Steam if available
+                let updated = false;
+                modsSet = modsSet.map(entry => {
+                    const steamModIds = data.workshop_mod_map[entry.publishedfileid] || [];
+                    if (steamModIds.length && entry.mod_id !== steamModIds[0]) {
+                        updated = true;
+                        return { ...entry, mod_id: steamModIds[0] };
+                    }
+                    return entry;
+                });
+                renderModsTable();
+                document.getElementById('syncModIdsStatus').textContent = updated ? 'Mod IDs synced from Steam.' : 'No changes needed.';
+                document.getElementById('syncModIdsStatus').style.display = 'inline';
+                // Optionally, re-render the mod map
+                renderManageWorkshopModMap(workshopIds, modsSet);
+            } else {
+                document.getElementById('syncModIdsStatus').textContent = 'Failed to sync.';
+                document.getElementById('syncModIdsStatus').style.display = 'inline';
+            }
+            setTimeout(() => {
+                document.getElementById('syncModIdsStatus').style.display = 'none';
+            }, 3000);
         });
 
         // Initial render
