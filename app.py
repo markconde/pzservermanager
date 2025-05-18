@@ -192,7 +192,7 @@ def create_app():
                         title = details.get("title", "")
                         meta = details.get("metadata", "")
                         mod_ids = set()
-                        # Try to extract Mod ID: ... (case-insensitive, allow underscore)
+                        # Try to extract Mod ID:
                         import re
 
                         modid_match = re.search(
