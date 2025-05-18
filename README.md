@@ -42,21 +42,30 @@ RCON_PASSWORD=<zomboid-rcon-password>
 APP_PORT=<webapp-port-mapping>
 GAME_SERVER_CONFIG_FOLDER_PATH=<path-to-zomboid-config-folder>
 GAME_SERVER_OPTIONS_FILENAME=<server-options-filename>
+# Optional for Cloudflared:
+CLOUDFLARE_TUNNEL_TOKEN=<your-cloudflare-tunnel-token>
 ```
 
-- **`SECRET_KEY`**: Secret key for Flask session management.
-- **`RCON_HOST`**: IP address of the Project Zomboid server.
-- **`RCON_PORT`**: Port for the RCON service.
-- **`RCON_PASSWORD`**: Password for the RCON service.
-- **`APP_PORT`**: Port mapping for the web application (e.g., `5000:5000`).
-- **`GAME_SERVER_CONFIG_FOLDER_PATH`**: Path to the Zomboid server's configuration folder.
-- **`GAME_SERVER_OPTIONS_FILENAME`**: Name of the server options file (e.g., `ServerOptions.ini`).
+### 3. Choose Your Deployment Method
 
-### 3. Build and Run the Docker Container
-Run the following command to build and start the RCON Manager:
+By default, the Docker Compose file uses the prebuilt image from Docker Hub.  
+If you want to build the image locally instead, comment out the `image:` line and uncomment the `build: .` line in `docker-compose.yaml` under the `zomboid-rcon` service.
+
+### 4. Start the Application
+
+#### Without Cloudflared (default)
 ```bash
-docker-compose up --build
+docker compose up
 ```
+
+#### With Cloudflared Tunnel (optional)
+To expose your app securely via Cloudflare Tunnel, ensure you have set `CLOUDFLARE_TUNNEL_TOKEN` in your `.env` file, then run:
+```bash
+docker compose --profile cloudflared up
+```
+This will start both the app and the Cloudflared tunnel.
+
+---
 
 The application will be accessible at `http://<host-ip>:5000` (replace `<host-ip>` with your server's IP).
 
@@ -96,6 +105,8 @@ zomboid-rcon/
 
 - Ensure the Project Zomboid server has RCON enabled and is accessible from the machine running this app.
 - The `GAME_SERVER_CONFIG_FOLDER_PATH` must point to the directory containing the server's configuration files (e.g., `ServerOptions.ini`).
+- The `cloudflared` service is **optional** and only runs if you use the `cloudflared` profile.
+- If you do not set the Cloudflare tunnel token or do not use the profile, the app will run as usual without Cloudflare Tunnel.
 
 ---
 
