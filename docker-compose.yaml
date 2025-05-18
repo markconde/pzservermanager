@@ -14,3 +14,24 @@ services:
       - GAME_SERVER_OPTIONS_FILENAME=${GAME_SERVER_OPTIONS_FILENAME}
     volumes:
       - ${GAME_SERVER_CONFIG_FOLDER_PATH}:/config
+    networks:
+      - zomboid-network
+    restart: unless-stopped
+
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    command: tunnel --no-autoupdate run --token ${CLOUDFLARE_TUNNEL_TOKEN}
+    restart: unless-stopped
+    environment:
+      - TUNNEL_TOKEN=${CLOUDFLARE_TUNNEL_TOKEN}
+    volumes:
+      - ./cloudflared:/etc/cloudflared
+    networks:
+      - zomboid-network
+    depends_on:
+      - zomboid-rcon
+    profiles: ["cloudflared"]
+
+networks:
+    zomboid-network:
+      driver: bridge
