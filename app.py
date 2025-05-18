@@ -2,6 +2,7 @@ from flask import Flask, render_template, request, redirect, url_for, flash, jso
 from rcon import Client
 from config import Config
 from commands import commands
+import requests
 
 
 def parse_mods_and_workshop_ids(mod_ids_str, workshop_ids_str):
@@ -15,6 +16,39 @@ def parse_mods_and_workshop_ids(mod_ids_str, workshop_ids_str):
         {"mod_id": mod_id, "workshop_id": workshop_id}
         for mod_id, workshop_id in zip(mod_ids, workshop_ids)
     ]
+
+
+def fetch_collection_workshop_ids(collection_url_or_id):
+    """
+    Given a Steam Workshop collection URL or ID,
+    fetch the list of Workshop item IDs in the collection.
+    Returns a list of workshop IDs as strings.
+    """
+    # Extract collection ID from URL or use as-is
+    import re
+
+    match = re.search(r"id=(\d+)", collection_url_or_id)
+    if match:
+        collection_id = match.group(1)
+    else:
+        # If only digits, treat as ID
+        collection_id = collection_url_or_id.strip()
+        if not collection_id.isdigit():
+            raise ValueError("Invalid collection URL or ID")
+
+    # Steam API endpoint for collection details
+    url = "https://api.steampowered.com/ISteamRemoteStorage/GetCollectionDetails/v1/"
+    payload = {"collectioncount": 1, "publishedfileids[0]": collection_id}
+    resp = requests.post(url, data=payload, timeout=10)
+    if resp.status_code != 200:
+        raise Exception(f"Steam API error: {resp.status_code}")
+    data = resp.json()
+    try:
+        children = data["response"]["collectiondetails"][0]["children"]
+        workshop_ids = [child["publishedfileid"] for child in children]
+        return workshop_ids
+    except Exception as e:
+        raise Exception(f"Failed to parse Steam API response: {e}")
 
 
 def create_app():
@@ -61,6 +95,18 @@ def create_app():
         workshop_ids = data.get("workshop_ids", "")
         result = parse_mods_and_workshop_ids(mod_ids, workshop_ids)
         return jsonify(result)
+
+    @app.route("/api/collection", methods=["POST"])
+    def api_collection():
+        data = request.get_json()
+        collection_url = data.get("collection_url")
+        if not collection_url:
+            return jsonify({"error": "Missing collection_url"}), 400
+        try:
+            workshop_ids = fetch_collection_workshop_ids(collection_url)
+            return jsonify({"workshop_ids": workshop_ids})
+        except Exception as e:
+            return jsonify({"error": str(e)}), 500
 
     return app
 
