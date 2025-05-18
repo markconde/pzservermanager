@@ -1,5 +1,3 @@
-version: "3.8"
-
 services:
   zomboid-rcon:
     image: markconde/pzservermanager:latest
