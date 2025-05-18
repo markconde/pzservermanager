@@ -1,8 +1,20 @@
 import os
-from flask import Flask, render_template, request, redirect, url_for, flash
+from flask import Flask, render_template, request, redirect, url_for, flash, jsonify
 from rcon import Client
 from config import Config
 from commands import commands
+
+def parse_mods_and_workshop_ids(mod_ids_str, workshop_ids_str):
+    mod_ids = mod_ids_str.split(';') if mod_ids_str else []
+    workshop_ids = workshop_ids_str.split(';') if workshop_ids_str else []
+    max_len = max(len(mod_ids), len(workshop_ids))
+    # Pad lists with empty strings if needed
+    mod_ids += [''] * (max_len - len(mod_ids))
+    workshop_ids += [''] * (max_len - len(workshop_ids))
+    return [
+        {'mod_id': mod_id, 'workshop_id': workshop_id}
+        for mod_id, workshop_id in zip(mod_ids, workshop_ids)
+    ]
 
 def create_app():
     app = Flask(__name__)
@@ -38,6 +50,14 @@ def create_app():
             flash(f"Error executing '{full_cmd}': {e}")
     
         return redirect(url_for('index'))
+
+    @app.route('/parse-mods', methods=['POST'])
+    def parse_mods():
+        data = request.get_json()
+        mod_ids = data.get('mod_ids', '')
+        workshop_ids = data.get('workshop_ids', '')
+        result = parse_mods_and_workshop_ids(mod_ids, workshop_ids)
+        return jsonify(result)
     
     return app
 

@@ -3,33 +3,181 @@
 <head>
     <meta charset="utf-8">
     <title>Project Zomboid RCON Manager</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+        }
+        .header {
+            background: linear-gradient(120deg, #232526 0%, #414345 100%);
+            color: #fff;
+            padding: 32px 0 24px 0;
+            text-align: center;
+            margin-bottom: 24px;
+            border-radius: 0 0 12px 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 2.5em;
+            letter-spacing: 2px;
+            text-shadow: 1px 2px 8px rgba(0,0,0,0.25);
+        }
+        .tabs {
+            display: flex;
+            cursor: pointer;
+            margin-bottom: 10px;
+        }
+        .tab {
+            padding: 10px;
+            background: #f1f1f1;
+            border: 1px solid #ccc;
+            margin-right: 5px;
+        }
+        .tab.active {
+            background: #fff;
+            border-bottom: none;
+        }
+        .tab-content {
+            border: 1px solid #ccc;
+            padding: 10px;
+        }
+        .hidden {
+            display: none;
+        }
+    </style>
 </head>
 <body>
-    <h1>Zomboid Server Manager</h1>
-    {% with messages = get_flashed_messages() %}
-      {% if messages %}
-        <ul>
-          {% for message in messages %}
-            <li>{{ message }}</li>
-          {% endfor %}
-        </ul>
-      {% endif %}
-    {% endwith %}
+    <div class="header">
+        <h1>Zomboid Server Manager</h1>
+    </div>
     
-    <h2>Commands</h2>
-    <ul>
-    {% for cmd, info in commands.items() %}
-        <li>
-            <form method="post" action="{{ url_for('run_command') }}">
-                <strong>{{ cmd }}</strong>: {{ info.description }}
-                <input type="hidden" name="command" value="{{ cmd }}">
-                {% for param in info.params %}
-                    <input type="text" name="{{ param }}" placeholder="{{ param }}">
-                {% endfor %}
-                <button type="submit">Execute</button>
-            </form>
-        </li>
-    {% endfor %}
-    </ul>
+    <div class="tabs">
+        <div class="tab active" onclick="showTab('commands')">Commands</div>
+        <div class="tab" onclick="showTab('parseMods')">Parse Mods Utility</div>
+        <div class="tab" onclick="showTab('manageMods')">Manage Mods Set</div>
+    </div>
+
+    <div id="commands" class="tab-content">
+        <h2>Commands</h2>
+        <ul>
+        {% for cmd, info in commands.items() %}
+            <li>
+                <form method="post" action="{{ url_for('run_command') }}">
+                    <strong>{{ cmd }}</strong>: {{ info.description }}
+                    <input type="hidden" name="command" value="{{ cmd }}">
+                    {% for param in info.params %}
+                        <input type="text" name="{{ param }}" placeholder="{{ param }}">
+                    {% endfor %}
+                    <button type="submit">Execute</button>
+                </form>
+            </li>
+        {% endfor %}
+        </ul>
+    </div>
+
+    <div id="parseMods" class="tab-content hidden">
+        <h2>Parse Mods Utility</h2>
+        <form id="parseModsForm">
+            <label for="mod_ids">Mod IDs (semicolon-separated):</label>
+            <input type="text" id="mod_ids" name="mod_ids" placeholder="ModA;ModB;ModC"><br>
+            <label for="workshop_ids">Workshop IDs (semicolon-separated):</label>
+            <input type="text" id="workshop_ids" name="workshop_ids" placeholder="123;456;789"><br>
+            <button type="submit">Parse</button>
+        </form>
+        <pre id="parseResult"></pre>
+    </div>
+
+    <div id="manageMods" class="tab-content hidden">
+        <h2>Manage Mods Set</h2>
+        <form id="addModForm">
+            <input type="text" id="new_mod_id" placeholder="Mod ID">
+            <input type="text" id="new_workshop_id" placeholder="Workshop ID">
+            <button type="submit">Add</button>
+        </form>
+        <table id="modsTable" border="1">
+            <thead>
+                <tr>
+                    <th>Mod ID</th>
+                    <th>Workshop ID</th>
+                    <th>Remove</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+        <p>
+            <strong>Mod IDs:</strong> <span id="modIdsList"></span><br>
+            <strong>Workshop IDs:</strong> <span id="workshopIdsList"></span>
+        </p>
+    </div>
+
+    <script>
+    let modsSet = []; // Will hold the current list
+
+    function showTab(tabId) {
+        document.querySelectorAll('.tab-content').forEach(tab => {
+            tab.classList.add('hidden');
+        });
+        document.getElementById(tabId).classList.remove('hidden');
+        document.querySelectorAll('.tab').forEach(tab => {
+            tab.classList.remove('active');
+        });
+        event.target.classList.add('active');
+    }
+
+    function renderModsTable() {
+        const tbody = document.getElementById('modsTable').querySelector('tbody');
+        tbody.innerHTML = '';
+        modsSet.forEach((item, idx) => {
+            let workshopCell = item.workshop_id
+                ? `<a href="https://steamcommunity.com/sharedfiles/filedetails/?id=${item.workshop_id}" target="_blank">${item.workshop_id}</a>`
+                : '';
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td>${item.mod_id}</td>
+                <td>${workshopCell}</td>
+                <td><button type="button" onclick="removeMod(${idx})">Remove</button></td>
+            `;
+            tbody.appendChild(tr);
+        });
+        document.getElementById('modIdsList').textContent = modsSet.map(x => x.mod_id).join(';');
+        document.getElementById('workshopIdsList').textContent = modsSet.map(x => x.workshop_id).join(';');
+    }
+
+    function removeMod(idx) {
+        modsSet.splice(idx, 1);
+        renderModsTable();
+    }
+
+    document.getElementById('addModForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        const mod_id = document.getElementById('new_mod_id').value.trim();
+        const workshop_id = document.getElementById('new_workshop_id').value.trim();
+        if (mod_id) {
+            modsSet.push({mod_id, workshop_id});
+            renderModsTable();
+            document.getElementById('new_mod_id').value = '';
+            document.getElementById('new_workshop_id').value = '';
+        }
+    });
+
+    document.getElementById('parseModsForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        const mod_ids = document.getElementById('mod_ids').value;
+        const workshop_ids = document.getElementById('workshop_ids').value;
+        const response = await fetch('/parse-mods', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ mod_ids, workshop_ids })
+        });
+        const result = await response.json();
+        document.getElementById('parseResult').textContent = JSON.stringify(result, null, 2);
+        modsSet = result;
+        renderModsTable();
+    });
+
+    // Initial render
+    renderModsTable();
+    showTab('commands'); // Show the commands tab by default
+    </script>
 </body>
 </html>
