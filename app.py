@@ -13,7 +13,7 @@ def parse_mods_and_workshop_ids(mod_ids_str, workshop_ids_str):
     mod_ids += [""] * (max_len - len(mod_ids))
     workshop_ids += [""] * (max_len - len(workshop_ids))
     return [
-        {"mod_id": mod_id, "workshop_id": workshop_id}
+        {"mod_id": mod_id, "publishedfileid": workshop_id}
         for mod_id, workshop_id in zip(mod_ids, workshop_ids)
     ]
 
@@ -119,6 +119,7 @@ def create_app():
         for wid in workshop_ids:
             try:
                 import requests
+
                 resp = requests.post(
                     "https://api.steampowered.com/ISteamRemoteStorage/GetPublishedFileDetails/v1/",
                     data={"itemcount": 1, "publishedfileids[0]": wid},
@@ -132,6 +133,7 @@ def create_app():
                     meta = details.get("metadata", "")
                     # Try to extract Mod ID: ... (case-insensitive, allow underscore)
                     import re
+
                     modid_match = re.search(
                         r"Mod ID[:=]\s*([\w_\-]+)",
                         desc,

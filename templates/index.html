@@ -52,6 +52,28 @@
         .hidden {
             display: none;
         }
+
+        .help-text {
+            color: #555;
+            font-size: 0.98em;
+            margin-bottom: 8px;
+            margin-top: -8px;
+        }
+
+        button {
+            margin-top: 4px;
+            margin-bottom: 4px;
+            padding: 4px 10px;
+            border-radius: 4px;
+            border: 1px solid #bbb;
+            background: #f7f7f7;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        button:hover {
+            background: #e0e0e0;
+        }
     </style>
 </head>
 
@@ -69,6 +91,8 @@
 
     <div id="commands" class="tab-content">
         <h2>Commands</h2>
+        <p class="help-text">Send RCON commands to your Project Zomboid server. Use with caution—these are direct server
+            commands.</p>
         <ul>
             {% for cmd, info in commands.items() %}
             <li>
@@ -87,8 +111,10 @@
 
     <div id="parseMods" class="tab-content hidden">
         <h2>Parse Mods Utility</h2>
+        <p class="help-text">Paste or type Mod IDs and Workshop IDs to see how they will be paired and parsed. Useful
+            for manual entry or troubleshooting.</p>
         <form id="parseModsForm">
-            <label for="mod_ids">mod IDs (semicolon-separated):</label>
+            <label for="mod_ids">Mod IDs (semicolon-separated):</label>
             <input type="text" id="mod_ids" name="mod_ids" placeholder="ModA;ModB;ModC"><br>
             <label for="publishedfileids">Workshop IDs (semicolon-separated):</label>
             <input type="text" id="publishedfileids" name="publishedfileids" placeholder="123;456;789"><br>
@@ -99,15 +125,17 @@
 
     <div id="manageMods" class="tab-content hidden">
         <h2>Manage Mods Set</h2>
+        <p class="help-text">Build and curate your mod set before exporting. Add, remove, or edit Mod IDs and Workshop
+            IDs. This table will be used for your final server config.</p>
         <form id="addModForm">
-            <input type="text" id="new_mod_id" placeholder="mod ID">
+            <input type="text" id="new_mod_id" placeholder="Mod ID">
             <input type="text" id="new_publishedfileid" placeholder="Workshop ID">
             <button type="submit">Add</button>
         </form>
         <table id="modsTable" border="1">
             <thead>
                 <tr>
-                    <th>mod ID</th>
+                    <th>Mod ID</th>
                     <th>Workshop ID</th>
                     <th>Remove</th>
                 </tr>
@@ -115,13 +143,25 @@
             <tbody></tbody>
         </table>
         <p>
-            <strong>mod IDs:</strong> <span id="modIdsList"></span><br>
+            <strong>Mod IDs:</strong> <span id="modIdsList"></span><br>
             <strong>Workshop IDs:</strong> <span id="publishedFileIdsList"></span>
         </p>
+        <button type="button" id="exportFromManageModsBtn">Export Mod IDs / Workshop IDs Strings</button>
+        <div id="manageExportResult" style="display:none; margin-top:1em;">
+            <div><strong>Mod IDs=</strong></div>
+            <textarea id="manage_modids_export" readonly style="width:100%; min-height:40px;"></textarea>
+            <button type="button" onclick="copyToClipboard('manage_modids_export')">Copy Mod IDs</button>
+            <div><strong>Workshop IDs=</strong></div>
+            <textarea id="manage_publishedfileids_export" readonly style="width:100%; min-height:40px;"></textarea>
+            <button type="button" onclick="copyToClipboard('manage_publishedfileids_export')">Copy Workshop IDs</button>
+        </div>
     </div>
 
     <div id="collectionToExport" class="tab-content hidden">
         <h2>Collection → Export</h2>
+        <p class="help-text">Paste a Steam Workshop Collection URL or ID to fetch all Workshop IDs, then generate
+            ready-to-paste Mod and Workshop ID strings for your server config. You can also load the results directly
+            into the Manage Mods Set table for further curation.</p>
         <form id="collectionForm">
             <label for="collection_url">Steam Workshop Collection URL or ID:</label>
             <input type="text" id="collection_url" name="collection_url"
@@ -133,11 +173,12 @@
         <label for="publishedfileids_export">Workshop IDs (semicolon or comma separated):</label>
         <textarea id="publishedfileids_export" readonly style="width:100%; min-height:40px;"></textarea>
         <button type="button" onclick="copyToClipboard('publishedfileids_export')">Copy Workshop IDs</button>
-        <button type="button" id="generateExportBtn">Generate mod IDs / Workshop IDs Strings</button>
+        <button type="button" id="generateExportBtn">Generate Mod IDs / Workshop IDs Strings</button>
+        <button type="button" id="loadToManageModsBtn">Load into Manage Mods Set</button>
         <div id="exportResult" style="display:none; margin-top:1em;">
-            <div><strong>mod IDs=</strong></div>
+            <div><strong>Mod IDs=</strong></div>
             <textarea id="modids_export" readonly style="width:100%; min-height:40px;"></textarea>
-            <button type="button" onclick="copyToClipboard('modids_export')">Copy mod IDs</button>
+            <button type="button" onclick="copyToClipboard('modids_export')">Copy Mod IDs</button>
             <div><strong>Workshop IDs=</strong></div>
             <textarea id="publishedfileids_export2" readonly style="width:100%; min-height:40px;"></textarea>
             <button type="button" onclick="copyToClipboard('publishedfileids_export2')">Copy Workshop IDs</button>
@@ -197,16 +238,17 @@
         document.getElementById('parseModsForm').addEventListener('submit', async function (e) {
             e.preventDefault();
             const mod_ids = document.getElementById('mod_ids').value;
-            const publishedfileids = document.getElementById('publishedfileids').value;
+            const workshop_ids = document.getElementById('publishedfileids').value;
             const response = await fetch('/parse-mods', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ mod_ids, publishedfileids })
+                body: JSON.stringify({ mod_ids, workshop_ids }) // Use 'workshop_ids' to match backend
             });
             const result = await response.json();
             document.getElementById('parseResult').textContent = JSON.stringify(result, null, 2);
             modsSet = result;
             renderModsTable();
+            showTab('manageMods'); // Automatically switch to Manage Mods Set tab
         });
 
         function copyToClipboard(id) {
@@ -227,12 +269,28 @@
             const data = await resp.json();
             if (resp.ok && data.workshop_ids) {
                 document.getElementById('publishedfileids_export').value = data.workshop_ids.join(';');
+                // Automatically generate export and load into Manage Mods Set
+                const exportResp = await fetch(`/api/export?workshop_ids=${encodeURIComponent(data.workshop_ids.join(';'))}`);
+                const exportData = await exportResp.json();
+                document.getElementById('modids_export').value = exportData.Mods;
+                document.getElementById('publishedfileids_export2').value = exportData.WorkshopItems;
+                document.getElementById('exportResult').style.display = 'block';
+                // Load into Manage Mods Set
+                const modIds = exportData.Mods.split(';').map(x => x.trim()).filter(Boolean);
+                const workshopIds = exportData.WorkshopItems.split(';').map(x => x.trim()).filter(Boolean);
+                let modsToLoad = [];
+                for (let i = 0; i < Math.max(modIds.length, workshopIds.length); i++) {
+                    modsToLoad.push({ mod_id: modIds[i] || '', publishedfileid: workshopIds[i] || '' });
+                }
+                modsSet = modsToLoad;
+                renderModsTable();
+                showTab('manageMods');
             } else {
                 document.getElementById('collectionError').textContent = data.error || 'Unknown error';
                 document.getElementById('collectionError').style.display = 'block';
                 document.getElementById('publishedfileids_export').value = '';
+                document.getElementById('exportResult').style.display = 'none';
             }
-            document.getElementById('exportResult').style.display = 'none';
         });
 
         document.getElementById('generateExportBtn').addEventListener('click', async function () {
@@ -243,6 +301,40 @@
             document.getElementById('modids_export').value = data.Mods;
             document.getElementById('publishedfileids_export2').value = data.WorkshopItems;
             document.getElementById('exportResult').style.display = 'block';
+        });
+
+        document.getElementById('loadToManageModsBtn').addEventListener('click', function () {
+            const modIds = document.getElementById('modids_export').value.split(';').map(x => x.trim()).filter(Boolean);
+            const workshopIds = document.getElementById('publishedfileids_export2').value.split(';').map(x => x.trim()).filter(Boolean);
+            let modsToLoad = [];
+            if (modIds.length && workshopIds.length) {
+                for (let i = 0; i < Math.max(modIds.length, workshopIds.length); i++) {
+                    modsToLoad.push({ mod_id: modIds[i] || '', publishedfileid: workshopIds[i] || '' });
+                }
+            } else {
+                const fallbackIds = document.getElementById('publishedfileids_export').value.split(';').map(x => x.trim()).filter(Boolean);
+                modsToLoad = fallbackIds.map(id => ({ mod_id: '', publishedfileid: id }));
+            }
+            modsSet = modsToLoad;
+            renderModsTable();
+            showTab('manageMods');
+        });
+
+        document.getElementById('exportFromManageModsBtn').addEventListener('click', async function () {
+            if (!modsSet.length) return;
+            const modIds = modsSet.map(x => x.mod_id).filter(Boolean).join(';');
+            const workshopIds = modsSet.map(x => x.publishedfileid).filter(Boolean).join(';');
+            // Use the same export API to get canonical Mod IDs if possible
+            let exportData = { Mods: modIds, WorkshopItems: workshopIds };
+            if (workshopIds) {
+                const resp = await fetch(`/api/export?workshop_ids=${encodeURIComponent(workshopIds)}`);
+                if (resp.ok) {
+                    exportData = await resp.json();
+                }
+            }
+            document.getElementById('manage_modids_export').value = exportData.Mods;
+            document.getElementById('manage_publishedfileids_export').value = exportData.WorkshopItems;
+            document.getElementById('manageExportResult').style.display = 'block';
         });
 
         // Initial render
