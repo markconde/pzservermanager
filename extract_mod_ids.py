@@ -1,5 +1,6 @@
 import re
 
+
 def extract_mod_ids_from_metadata(description_or_metadata):
     """
     Extracts mod IDs from a string containing mod metadata or description.

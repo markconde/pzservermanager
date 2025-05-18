@@ -1,11 +1,13 @@
 import sys
 import os
-sys.path.insert(0, os.path.abspath(os.path.dirname(__file__) + '/..'))
+
+sys.path.insert(0, os.path.abspath(os.path.dirname(__file__) + "/.."))
 
 import pytest
 from app import create_app
 
 COLLECTION_URL = "https://steamcommunity.com/sharedfiles/filedetails/?id=3467491972"
+
 
 def test_api_collection(client):
     response = client.post(
@@ -20,6 +22,7 @@ def test_api_collection(client):
     assert isinstance(data["workshop_ids"], list)
     # Should be non-empty for a real collection
     assert len(data["workshop_ids"]) > 0
+
 
 @pytest.fixture
 def client():
