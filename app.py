@@ -108,6 +108,64 @@ def create_app():
         except Exception as e:
             return jsonify({"error": str(e)}), 500
 
+    @app.route("/api/export", methods=["GET"])
+    def api_export():
+        ids = request.args.get("workshop_ids", "")
+        ids = ids.replace(",", ";")
+        workshop_ids = [i.strip() for i in ids.split(";") if i.strip()]
+        from extract_mod_ids import extract_mod_ids_from_metadata
+
+        mods = set()
+        for wid in workshop_ids:
+            try:
+                import requests
+                resp = requests.post(
+                    "https://api.steampowered.com/ISteamRemoteStorage/GetPublishedFileDetails/v1/",
+                    data={"itemcount": 1, "publishedfileids[0]": wid},
+                    timeout=10,
+                )
+                if resp.status_code == 200:
+                    data = resp.json()
+                    details = data["response"]["publishedfiledetails"][0]
+                    desc = details.get("description", "")
+                    title = details.get("title", "")
+                    meta = details.get("metadata", "")
+                    # Try to extract Mod ID: ... (case-insensitive, allow underscore)
+                    import re
+                    modid_match = re.search(
+                        r"Mod ID[:=]\s*([\w_\-]+)",
+                        desc,
+                        re.IGNORECASE,
+                    )
+                    if modid_match:
+                        mods.add(modid_match.group(1))
+                        continue
+                    # Fallback to previous extraction logic
+                    found = extract_mod_ids_from_metadata(desc)
+                    if not found:
+                        found = extract_mod_ids_from_metadata(meta)
+                    if not found:
+                        found = extract_mod_ids_from_metadata(title)
+                    if not found and "requireditems" in details:
+                        for req in details["requireditems"]:
+                            req_title = req.get("title", "")
+                            found += extract_mod_ids_from_metadata(req_title)
+                    mods.update(found)
+            except Exception:
+                continue
+        # Remove empty strings and deduplicate
+        mods = [m for m in set(mods) if m]
+        return jsonify(
+            {
+                "Mods": ";".join(mods),
+                "WorkshopItems": ";".join(workshop_ids),
+            }
+        )
+
+    @app.route("/export", methods=["GET", "POST"])
+    def export_page():
+        return render_template("export.html")
+
     return app
 
 
