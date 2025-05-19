@@ -4,3 +4,4 @@ venv/
 .env
 project.md
 *.db
+workshop_cache.json
